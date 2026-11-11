@@ -29,14 +29,16 @@ A small full-stack student management application built with Next.js, Tailwind C
    ```
 
 2. Configure environment variables:
-   Create a `.env.local` file in the project root and set your MongoDB connection string:
+   Create a `.env.local` file in the project root and set your MongoDB connection string if you want to use your own MongoDB instance:
    ```bash
    MONGODB_URI=mongodb://127.0.0.1:27017/smgts
    ```
 
    A sample configuration is also available in `.env.example`.
 
-3. Start MongoDB locally or point `MONGODB_URI` to an existing MongoDB instance.
+   If you do not set `MONGODB_URI`, the app automatically starts an in-memory MongoDB database for local development and testing.
+
+3. Start MongoDB locally only if you want to use a persistent external database instead of the built-in fallback.
 
 4. Run the development server:
    ```bash

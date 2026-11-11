@@ -36,8 +36,6 @@ const studentSchema = new mongoose.Schema(
   }
 );
 
-studentSchema.index({ email: 1 }, { unique: true });
-
 const Student = mongoose.models.Student || mongoose.model("Student", studentSchema);
 
 export default Student;
