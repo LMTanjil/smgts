@@ -1,107 +1,61 @@
-import mongoose from "mongoose";
-import dbConnect from "../../../../lib/dbConnect";
-import Student from "../../../../models/Student";
+import dbConnect from "@/lib/dbConnect";
+import Student from "@/models/Student";
+import { validateStudent } from "@/lib/validation";
+import { fail, handleApiError, isValidObjectId, ok, readJson } from "@/lib/apiResponse";
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phonePattern = /^\+?[0-9\s-]{7,15}$/;
+const INVALID_ID = "Invalid student ID.";
+const NOT_FOUND = "Student not found.";
 
-function validateStudentPayload(payload) {
-  const name = String(payload?.name || "").trim();
-  const email = String(payload?.email || "").trim().toLowerCase();
-  const phone = String(payload?.phone || "").trim();
-  const department = String(payload?.department || "").trim();
-
-  const errors = [];
-
-  if (!name) errors.push("Name is required.");
-  if (!email) errors.push("Email is required.");
-  else if (!emailPattern.test(email)) errors.push("Please provide a valid email address.");
-
-  if (!phone) errors.push("Phone is required.");
-  else if (!phonePattern.test(phone)) errors.push("Please provide a valid phone number.");
-
-  if (!department) errors.push("Department is required.");
-
-  return {
-    isValid: errors.length === 0,
-    data: { name, email, phone, department },
-    message: errors.join(" "),
-  };
-}
-
+// GET /api/students/[id] - fetch one student
 export async function GET(_request, { params }) {
+  const { id } = await params;
+  if (!isValidObjectId(id)) return fail(INVALID_ID, 400);
+
   try {
-    const { id } = await params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return Response.json({ success: false, message: "Invalid student ID." }, { status: 400 });
-    }
-
     await dbConnect();
     const student = await Student.findById(id);
-
-    if (!student) {
-      return Response.json({ success: false, message: "Student not found." }, { status: 404 });
-    }
-
-    return Response.json({ success: true, data: student });
-  } catch {
-    return Response.json({ success: false, message: "Unable to load student details." }, { status: 500 });
+    if (!student) return fail(NOT_FOUND, 404);
+    return ok(student);
+  } catch (error) {
+    return handleApiError(error, "Unable to load student details right now.");
   }
 }
 
+// PUT /api/students/[id] - update a student
 export async function PUT(request, { params }) {
+  const { id } = await params;
+  if (!isValidObjectId(id)) return fail(INVALID_ID, 400);
+
+  const body = await readJson(request);
+  if (!body) return fail("Request body must be a valid JSON object.", 400);
+
+  const { data, errors, isValid } = validateStudent(body);
+  if (!isValid) return fail("Please correct the highlighted fields.", 400, errors);
+
   try {
-    const { id } = await params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return Response.json({ success: false, message: "Invalid student ID." }, { status: 400 });
-    }
-
     await dbConnect();
-    const payload = await request.json();
-    const validation = validateStudentPayload(payload);
-
-    if (!validation.isValid) {
-      return Response.json({ success: false, message: validation.message }, { status: 400 });
-    }
-
-    const student = await Student.findByIdAndUpdate(id, validation.data, {
-      new: true,
+    const student = await Student.findByIdAndUpdate(id, data, {
+      returnDocument: "after",
       runValidators: true,
     });
-
-    if (!student) {
-      return Response.json({ success: false, message: "Student not found." }, { status: 404 });
-    }
-
-    return Response.json({ success: true, message: "Student updated successfully.", data: student });
+    if (!student) return fail(NOT_FOUND, 404);
+    return ok(student, { message: "Student updated successfully." });
   } catch (error) {
-    if (error?.code === 11000) {
-      return Response.json({ success: false, message: "A student with this email already exists." }, { status: 409 });
-    }
-
-    return Response.json({ success: false, message: "Unable to update student right now." }, { status: 500 });
+    return handleApiError(error, "Unable to update student right now.");
   }
 }
 
+// DELETE /api/students/[id] - delete a student
 export async function DELETE(_request, { params }) {
+  const { id } = await params;
+  if (!isValidObjectId(id)) return fail(INVALID_ID, 400);
+
   try {
-    const { id } = await params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return Response.json({ success: false, message: "Invalid student ID." }, { status: 400 });
-    }
-
     await dbConnect();
     const student = await Student.findByIdAndDelete(id);
-
-    if (!student) {
-      return Response.json({ success: false, message: "Student not found." }, { status: 404 });
-    }
-
-    return Response.json({ success: true, message: "Student deleted successfully." });
-  } catch {
-    return Response.json({ success: false, message: "Unable to delete student right now." }, { status: 500 });
+    if (!student) return fail(NOT_FOUND, 404);
+    return ok({ _id: student._id }, { message: "Student deleted successfully." });
+  } catch (error) {
+    return handleApiError(error, "Unable to delete student right now.");
   }
 }
