@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Header from "./Header";
 import StudentForm from "./StudentForm";
 import StudentTable from "./StudentTable";
+import StudentToolbar, { DEFAULT_FILTERS, applyFilters } from "./StudentToolbar";
 import ConfirmDialog from "./ConfirmDialog";
 import Spinner from "./Spinner";
 import { ToastStack, useToasts } from "./Toasts";
@@ -41,7 +42,16 @@ export default function StudentDashboard() {
   const [editingStudent, setEditingStudent] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const { toasts, notify, dismiss } = useToasts();
+
+  const departments = [...new Set(students.map((s) => s.department))].sort((a, b) =>
+    a.localeCompare(b)
+  );
+  // If the selected department no longer exists (e.g. last student deleted), show all.
+  if (filters.department && !departments.includes(filters.department)) {
+    setFilters({ ...filters, department: "" });
+  }
 
   const applyList = useCallback((payload) => {
     setStudents(payload.data);
@@ -141,13 +151,39 @@ export default function StudentDashboard() {
       />
     );
   } else {
+    const visibleStudents = applyFilters(students, filters);
+    const isFiltered = filters.query.trim() !== "" || filters.department !== "";
     listContent = (
-      <StudentTable
-        students={students}
-        editingId={editingStudent?._id}
-        onEdit={handleEdit}
-        onDelete={setDeleteTarget}
-      />
+      <>
+        <StudentToolbar filters={filters} onChange={setFilters} departments={departments} />
+        {isFiltered ? (
+          <p className="mb-3 text-xs text-slate-500" aria-live="polite">
+            Showing {visibleStudents.length} of {students.length} students
+          </p>
+        ) : null}
+        {visibleStudents.length === 0 ? (
+          <ListMessage
+            title="No matching students"
+            description="Try a different search term or department."
+            action={
+              <button
+                type="button"
+                onClick={() => setFilters(DEFAULT_FILTERS)}
+                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-300 transition hover:bg-slate-50"
+              >
+                Clear filters
+              </button>
+            }
+          />
+        ) : (
+          <StudentTable
+            students={visibleStudents}
+            editingId={editingStudent?._id}
+            onEdit={handleEdit}
+            onDelete={setDeleteTarget}
+          />
+        )}
+      </>
     );
   }
 
