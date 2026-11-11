@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Header from "./Header";
 import StudentForm from "./StudentForm";
+import StudentStats from "./StudentStats";
 import StudentTable from "./StudentTable";
 import StudentToolbar, { DEFAULT_FILTERS, applyFilters } from "./StudentToolbar";
 import ConfirmDialog from "./ConfirmDialog";
@@ -196,6 +197,8 @@ export default function StudentDashboard() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Student management</h1>
           <p className="mt-1 text-sm text-slate-500">Register, update and remove student records.</p>
         </div>
+
+        {status === "ready" && students.length > 0 ? <StudentStats students={students} /> : null}
 
         <div className="grid items-start gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
           <div className="xl:sticky xl:top-20">
