@@ -12,6 +12,8 @@ A full-stack CRUD application for managing student records, built with **Next.js
 - Unique emails enforced by a MongoDB unique index
 - Toast notifications, loading skeletons, empty state and error state with retry
 - Friendly error messages; raw database errors are never shown to users
+- Search by name or email, filter by department, sort by name or date
+- Dashboard statistics: totals, largest department, latest addition and a per-department breakdown
 
 ## Tech Stack
 
@@ -173,6 +175,8 @@ components/
   StudentDashboard.js          Page state: list, edit, delete, toasts
   StudentForm.js, FormField.js Create/edit form with inline errors
   StudentTable.js              Responsive table / card list
+  StudentToolbar.js            Search, department filter and sort
+  StudentStats.js              Dashboard statistics
   ConfirmDialog.js             Delete confirmation modal
   Header.js, Toasts.js, Spinner.js
 lib/
